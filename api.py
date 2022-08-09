@@ -16,26 +16,27 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from logging import Logger
 import dateutil
 
-#logging.basicConfig(level=logging.INFO)
-#logging.getLogger('apscheduler').setLevel(logging.DEBUG)
-#logger=Logger("Bruno")
+# logging.basicConfig(level=logging.INFO)
+# logging.getLogger('apscheduler').setLevel(logging.DEBUG)
+# logger=Logger("Bruno")
 sched = BlockingScheduler()
 
+
 class Pmclient(object):
-    
+
     __username = None
     __password = None
     __uuid = None
     __session = None
     now = datetime.now()
     data_atual = now.strftime("%m/%d/%Y, %H:%M:%S")
-    
-    
+
     def __init__(self):
-        
+
         self.__username = os.getenv("PMUSERNAME", "")
         self.__password = os.getenv("PMPASSWORD", "")
-        self.__address = os.getenv("address", "R. do Rocio, 220 - Vila Olimpia, São Paulo - SP, 04552-000, Brasil")
+        self.__address = os.getenv(
+            "address", "R. do Rocio, 220 - Vila Olimpia, São Paulo - SP, 04552-000, Brasil")
         self.__latitude = os.getenv("latitude", "-23.593910069905398")
         self.__longitude = os.getenv("longitude", "-46.68620730511535")
         self.__uuid = str(uuid.uuid1())
@@ -62,7 +63,7 @@ class Pmclient(object):
             "client": self.__client,
             "content-type": "application/json",
         }
-        
+
     def login(self) -> bool:
 
         token = None
@@ -70,7 +71,7 @@ class Pmclient(object):
         expiry = None
         authenticated = False
 
-        auth_url =  self.login_endpoint
+        auth_url = self.login_endpoint
         credentials = {"login": self.__username, "password": self.__password}
         response = self.__session.post(auth_url, data=credentials)
         print(f"iniciando login: {response}")
@@ -84,13 +85,12 @@ class Pmclient(object):
             self.__client = client
             self.__expiry = expiry
             print(f"autenticado: {response_json}")
-        
 
         print(f"login: {authenticated}")
         return authenticated
-    
+
     def register(self) -> dict:
-        
+
         payload = {
             "time_card": {
                 "latitude": self.__latitude,
@@ -119,9 +119,8 @@ class Pmclient(object):
         print(f"Registrando Resposta: {response}")
         return response.json()
 
-    
     def handle_reg(self):
-        
+
         try:
             x = Pmclient()
             auth = x.login()
@@ -129,9 +128,9 @@ class Pmclient(object):
             print(f"<error de login>{error}</error de login>\n")
             while auth == False:
                 print("tentando login novamente...")
-                auth = x.login()    
+                auth = x.login()
             return
-      
+
         if auth:
             confirmed = True
             if confirmed:
@@ -143,36 +142,41 @@ class Pmclient(object):
             return
 
         print("<error>Checa esse Login Porra!</error>\n")
-    
+
     def note(self, data: datetime):
         fi = open("./note.txt", "a")
         fi.write(f"Registro de ponto efetuado em {data}\n")
         fi.close()
 
+
 x = Pmclient()
 print(f"--------- Login ----------- : {x.login()}")
 
+
 @sched.scheduled_job('cron', day_of_week='mon-fri', hour=7, minute=45, jitter=900)
-def scheduled_job():         
-    print(f'Ponto de almoço as {datetime.now()}')
-    x.handle_reg()
-    x.note(f"{datetime.now()}")
-    print("-------------------------------------")
-    
-@sched.scheduled_job('cron', day_of_week='mon-fri', hour=12, minute=15, jitter=900)
-def scheduled_job():  
+def scheduled_job():
     print(f'Ponto de almoço as {datetime.now()}')
     x.handle_reg()
     x.note(f"{datetime.now()}")
     print("-------------------------------------")
 
+
+@sched.scheduled_job('cron', day_of_week='mon-fri', hour=12, minute=15, jitter=900)
+def scheduled_job():
+    print(f'Ponto de almoço as {datetime.now()}')
+    x.handle_reg()
+    x.note(f"{datetime.now()}")
+    print("-------------------------------------")
+
+
 @sched.scheduled_job('cron', day_of_week='mon-fri', hour=13, minute=15, jitter=900)
-def scheduled_job():  
+def scheduled_job():
     print(f'Ponto de almoço as {datetime.now()}'),
     x.handle_reg()
     x.note(f"{datetime.now()}")
     print("-------------------------------------")
-    
+
+
 @sched.scheduled_job('cron', day_of_week='mon-fri', hour=18, minute=15, jitter=900)
 def scheduled_job():
     print(f'Ponto de saida as {datetime.now()}')
